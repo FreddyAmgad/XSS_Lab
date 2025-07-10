@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>XSS Lab – Hacker UI</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&family=Roboto&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body, html {
+      margin: 0;
+      padding: 0;
+      font-family: 'Roboto', sans-serif;
+      height: 100%;
+      overflow-x: hidden;
+      background: #000;
+      color: white;
+    }
+
+    /* === Background Video === */
+    .background-video {
+      position: fixed;
+      top: 0;
+      left: 0;
+      min-width: 100%;
+      min-height: 100%;
+      z-index: -1;
+      object-fit: cover;
+      filter: brightness(0.2) contrast(1.2) saturate(1.5);
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 60px auto;
+      padding: 30px;
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid #00ffcc55;
+      border-radius: 20px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 0 30px rgba(0,255,200,0.3);
+    }
+
+    h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 36px;
+      text-align: center;
+      color: #00ffcc;
+      margin-bottom: 10px;
+    }
+
+    p {
+      text-align: center;
+      color: #ccc;
+      margin-bottom: 30px;
+    }
+
+    .header-img {
+      display: block;
+      margin: 0 auto 20px;
+      width: 80px;
+      animation: pulse 3s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 0.9; }
+      50% { transform: scale(1.1); opacity: 1; }
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    label {
+      font-weight: bold;
+      color: #00ffcc;
+      margin-bottom: 5px;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="tel"],
+    textarea {
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      font-size: 16px;
+    }
+
+    input:focus, textarea:focus {
+      outline: 2px solid #00ffcc;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    button {
+      background: #00ffcc;
+      color: #000;
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 16px;
+      cursor: pointer;
+      transition: 0.3s ease;
+    }
+
+    button:hover {
+      background: #00e6b8;
+    }
+
+    #backLink {
+    display: inline-block;
+    margin-bottom: 20px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #00ffcc;
+    background: transparent;
+    border: 2px solid #00ffcc;
+    border-radius: 30px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 10px #00ffcc44, 0 0 20px #00ffcc22 inset;
+  }
+
+  #backLink:hover {
+    background-color: #00ffcc;
+    color: #000;
+    box-shadow: 0 0 15px #00ffccaa, 0 0 25px #00ffcc88 inset;
+    transform: scale(1.05);
+  }
+    #flagForm {
+      display: none;
+      margin-top: 30px;
+      background: rgba(0, 255, 204, 0.1);
+      border: 1px solid #00ffcc;
+      padding: 20px;
+      border-radius: 12px;
+    }
+
+    #tokenInput {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      background: rgba(255,255,255,0.15);
+      border-radius: 8px;
+      color: white;
+      margin-top: 10px;
+    }
+
+    #result {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+
+    .video-preview {
+      display: none;
+      margin-top: 30px;
+      text-align: center;
+    }
+
+    .video-preview video {
+      width: 100%;
+      border-radius: 12px;
+      box-shadow: 0 0 12px rgba(0,255,204,0.3);
+    }
+
+    .relax-message {
+      text-align: center;
+      font-size: 18px;
+      margin-top: 20px;
+      color: #00ffcc;
+      animation: fadeIn 1s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        margin: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <video autoplay muted loop class="background-video">
+    <source src="https://cdn.pixabay.com/vimeo/556765857/hacker-84517.mp4?width=1280&hash=7b256184171d7e92d35d4e59d33ac17fc00bc9f4" type="video/mp4">
+  </video>
+
+  <div class="container">
+    <a id="backLink" href="#">← Back</a>
+    <img src="https://cdn-icons-png.flaticon.com/512/5501/5501363.png" class="header-img" alt="icon"/>
+    <h1>Secure Contact Lab</h1>
+    <p>🛡️ Discover how XSS vulnerabilities work – and master them.</p>
+
+    <form id="contactForm">
+      <div class="form-group">
+        <label for="problem">Problem Description:</label>
+        <textarea id="problem" name="problem" required></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" required />
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" required />
+      </div>
+
+      <div class="form-group">
+        <label for="phone">Phone Number:</label>
+        <input type="tel" id="phone" name="phone" />
+      </div>
+
+      <button type="submit">💥 Submit</button>
+    </form>
+
+    <div id="flagForm">
+      <h3>🎯 Enter the Secret Token</h3>
+      <input type="text" id="tokenInput" placeholder="Enter the token..." />
+      <button onclick="submitToken()">Submit Token</button>
+      <div id="result"></div>
+    </div>
+
+    <div class="relax-message" id="relaxMsg" style="display: none;">
+      💡 Well done, soldier. You've triggered the vulnerability.<br>
+      Time for a break — watch this video to recharge ⚔️🎥
+    </div>
+
+    <div class="video-preview" id="videoBlock">
+      <video controls>
+        <source src="https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+      </video>
+    </div>
+  </div>
+
+  <script>
+    const token = Math.random().toString(36).substring(2, 15);
+    window.__secret_token = token;
+    window.__xss_triggered = false;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const hrefValue = urlParams.get('href') || 'javascript:void(0)';
+    document.getElementById('backLink').href = hrefValue;
+
+    function markXSS() {
+      if (!window.__xss_triggered) {
+        window.__xss_triggered = true;
+        console.log('%c[XSS Detected] Token:', 'color:red; font-weight:bold;');
+        console.log('%c' + window.__secret_token, 'color:green; font-size:16px');
+
+        // Show the token submission and the hacker break
+        document.getElementById('flagForm').style.display = 'block';
+        document.getElementById('relaxMsg').style.display = 'block';
+        document.getElementById('videoBlock').style.display = 'block';
+      }
+    }
+
+    const patch = (obj, fn) => {
+      const orig = obj[fn];
+      obj[fn] = function(...args) {
+        markXSS();
+        return orig.apply(this, args);
+      };
+    };
+
+    patch(window, 'eval');
+    patch(window, 'Function');
+    patch(window, 'setTimeout');
+    patch(window, 'setInterval');
+    patch(document, 'write');
+const originalAlert = window.alert;
+window.alert = function(message) {
+  if (message !== "Form submitted! (This is a demo)") {
+    markXSS();
+  }
+  return originalAlert.apply(this, arguments);
+};
+    const observer = new MutationObserver(mutations => {
+      for (let m of mutations) {
+        m.addedNodes.forEach(node => {
+          if (
+            node.tagName === 'SCRIPT' ||
+            (node.innerHTML && node.innerHTML.includes('eval'))
+          ) {
+            markXSS();
+          }
+        });
+      }
+    });
+    observer.observe(document.documentElement, { childList: true, subtree: true });
+
+    document.getElementById('contactForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      alert('Form submitted! (This is a demo)');
+    });
+
+    function submitToken() {
+      const input = document.getElementById('tokenInput').value.trim();
+      const result = document.getElementById('result');
+      if (input === window.__secret_token) {
+        result.innerHTML = "✅ Lab Solved! Correct Token.";
+        result.style.color = 'lime';
+      } else {
+        result.innerHTML = "❌ Incorrect Token. Try again.";
+        result.style.color = 'red';
+      }
+    }
+  </script>
+</body>
+</html>
